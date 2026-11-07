@@ -180,10 +180,9 @@
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* ====== PEGA AQUÍ TU firebaseConfig (reemplaza todo este bloque) ====== */
 const firebaseConfig = {
   apiKey: "AIzaSyD2wx0RYrgTsXlGHp5bkYhPcck4AE0BkS4",
   authDomain: "control-financiero-a0323.firebaseapp.com",
@@ -192,16 +191,6 @@ const firebaseConfig = {
   messagingSenderId: "978613163103",
   appId: "1:978613163103:web:9b524616b4356db6d8b7ea"
 };
-/* ====================================================================== */
-
-var appEl = document.getElementById('app');
-var configOk = firebaseConfig.apiKey.indexOf('PEGA') === -1;
-var auth, db;
-if (configOk) {
-  var fbApp = initializeApp(firebaseConfig);
-  auth = getAuth(fbApp);
-  db = getFirestore(fbApp);
-}
 
 var fmt=new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0});
 function money(n){return fmt.format(Math.round(n||0))}
@@ -258,7 +247,7 @@ function contentHTML(state){
 
 
 var state = { saldo: 0, ingresoQuincenal: 0, gastos: [], pendientes: [] };
-var user = null, unsub = null, modoCrear = false, mensaje = '';
+var user = null, unsub = null, mensaje = '';
 
 function normalizar(d) {
   d = d || {};
@@ -267,21 +256,20 @@ function normalizar(d) {
 }
 function errorTexto(e) {
   var c = (e && e.code) || '';
-  if (c === 'auth/invalid-credential' || c === 'auth/wrong-password' || c === 'auth/user-not-found') return 'Correo o contraseña incorrectos.';
-  if (c === 'auth/email-already-in-use') return 'Ese correo ya tiene cuenta. Pulsa "Ya tengo cuenta".';
+  if (c === 'auth/invalid-credential' || c === 'auth/wrong-password' || c === 'auth/user-not-found') return 'Usuario o contraseña incorrectos.';
+  if (c === 'auth/email-already-in-use') return 'Ese usuario ya existe. Pulsa "Ya tengo cuenta".';
   if (c === 'auth/weak-password') return 'La contraseña debe tener mínimo 6 caracteres.';
-  if (c === 'auth/invalid-email') return 'El correo no es válido.';
+  if (c === 'auth/invalid-email') return 'El usuario no es válido.';
   if (c === 'auth/too-many-requests') return 'Demasiados intentos. Espera un momento.';
   if (c === 'auth/network-request-failed') return 'Sin internet. Revisa tu conexión.';
-  if (c === 'auth/operation-not-allowed') return 'Falta activar Correo/Contraseña en Firebase.';
+  if (c === 'auth/operation-not-allowed') return 'Falta activar Correo/Contraseña en Firebase (Authentication).';
   return 'No se pudo completar. Intenta de nuevo.';
 }
 function loginHTML() {
-  return '<div class="login"><h1>Mi cuenta quincenal</h1><p class="sub">' + (modoCrear ? 'Crea tu cuenta para guardar tus datos.' : 'Entra con tu cuenta.') + '</p>' +
-    '<div class="field"><label for="l-mail">Correo</label><input id="l-mail" type="email" autocomplete="email"></div>' +
-    '<div class="field"><label for="l-pass">Contraseña</label><input id="l-pass" type="password" autocomplete="' + (modoCrear ? 'new-password' : 'current-password') + '"></div>' +
-    '<button class="btn-primary" id="l-enviar">' + (modoCrear ? 'Crear cuenta' : 'Entrar') + '</button>' +
-    '<button class="alt" id="l-cambiar">' + (modoCrear ? 'Ya tengo cuenta' : 'Crear una cuenta nueva') + '</button>' +
+  return '<div class="login"><h1>Mi cuenta quincenal</h1><p class="sub">Entra con tu cuenta.</p>' +
+    '<div class="field"><label for="l-mail">Usuario</label><input id="l-mail" type="text" value="usuario23" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false"></div>' +
+    '<div class="field"><label for="l-pass">Contraseña</label><input id="l-pass" type="password" autocomplete="current-password"></div>' +
+    '<button class="btn-primary" id="l-enviar">Entrar</button>' +
     '<p class="err" id="l-err">' + escapeHtml(mensaje) + '</p></div>';
 }
 function renderLogin() { appEl.innerHTML = loginHTML(); }
@@ -292,7 +280,7 @@ function commit() {
 }
 
 if (!configOk) {
-  appEl.innerHTML = '<div class="login"><h1>Falta un paso</h1><p class="sub">Pega tu firebaseConfig en este archivo (busca "PEGA AQUÍ").</p></div>';
+  appEl.innerHTML = '<div class="login"><h1>Falta un paso</h1><p class="sub">Revisa el archivo firebase-config.js.</p></div>';
 } else {
   appEl.innerHTML = '<p class="cargando">Cargando…</p>';
   onAuthStateChanged(auth, function (u) {
@@ -311,13 +299,14 @@ if (!configOk) {
 var pendOpen = false;
 appEl.addEventListener('click', function (e) {
   var t = e.target;
-  if (t.id === 'l-cambiar') { modoCrear = !modoCrear; mensaje = ''; renderLogin(); return; }
   if (t.id === 'l-enviar') {
-    var mail = document.getElementById('l-mail').value.trim(), pass = document.getElementById('l-pass').value;
-    if (!mail || !pass) { mensaje = 'Escribe el correo y la contraseña.'; renderLogin(); return; }
+    var usuario = document.getElementById('l-mail').value.trim().toLowerCase().replace(/\s+/g, ''), pass = document.getElementById('l-pass').value;
+    if (!usuario || !pass) { mensaje = 'Escribe el usuario y la contraseña.'; renderLogin(); return; }
+    if (!/^[a-z0-9._-]+$/.test(usuario)) { mensaje = 'El usuario solo puede llevar letras, números y . _ -'; renderLogin(); document.getElementById('l-mail').value = usuario; return; }
+    var mail = usuario + '@cuentaquincenal.app';
     t.disabled = true;
-    (modoCrear ? createUserWithEmailAndPassword(auth, mail, pass) : signInWithEmailAndPassword(auth, mail, pass))
-      .catch(function (err) { mensaje = errorTexto(err); renderLogin(); document.getElementById('l-mail').value = mail; });
+    signInWithEmailAndPassword(auth, mail, pass)
+      .catch(function (err) { mensaje = errorTexto(err); renderLogin(); document.getElementById('l-mail').value = usuario; });
     return;
   }
   if (t.id === 'btn-salir') { signOut(auth); return; }
