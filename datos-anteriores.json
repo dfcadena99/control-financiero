@@ -1,0 +1,48 @@
+{
+  "saldo": 0,
+  "ingresoQuincenal": 0,
+  "gastos": [
+    {
+      "id": "a1",
+      "nombre": "SOAT moto",
+      "monto": 326300,
+      "abonado": 0,
+      "fecha": "2027-05-25"
+    },
+    {
+      "id": "a2",
+      "nombre": "SOAT carro",
+      "monto": 1116000,
+      "abonado": 0,
+      "fecha": "2026-12-21"
+    },
+    {
+      "id": "a3",
+      "nombre": "Tecno moto",
+      "monto": 234000,
+      "abonado": 0,
+      "fecha": "2027-06-25"
+    },
+    {
+      "id": "a4",
+      "nombre": "Tecno carro",
+      "monto": 301000,
+      "abonado": 0,
+      "fecha": "2027-03-21"
+    },
+    {
+      "id": "a5",
+      "nombre": "Impuesto carro",
+      "monto": 640000,
+      "abonado": 0,
+      "fecha": "2027-05-30"
+    },
+    {
+      "id": "gmuc13l5gh9fsz",
+      "nombre": "sd",
+      "monto": 1200000,
+      "abonado": 0,
+      "fecha": "2027-10-10"
+    }
+  ]
+}
