@@ -173,6 +173,18 @@
   .login .err{color:var(--alert);font-size:.88rem;min-height:1.2em;margin:8px 0 0}
   .login .alt{margin-top:12px;background:transparent;border-color:var(--line);color:var(--ink-soft);width:100%}
   .cargando{text-align:center;padding:80px 20px;color:var(--ink-soft)}
+
+  .row-actions{flex-wrap:wrap}
+  .bar{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:26px}
+  .bar button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 6px;background:var(--surface);border:1px solid var(--line);border-radius:16px;color:var(--ink);position:relative;font-size:.78rem;font-weight:600;line-height:1.2;text-align:center}
+  .bar button:hover{border-color:var(--accent)}
+  .bar .ic{font-size:1.7rem;line-height:1}
+  .bar .bd{position:absolute;top:6px;right:8px;min-width:20px;height:20px;border-radius:10px;background:var(--accent);color:#fff;font-size:.72rem;display:grid;place-items:center;padding:0 5px}
+  .bar .bd.al{background:var(--alert)}
+  .vhead{display:flex;align-items:center;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+  .vhead h1{font-size:1.3rem;margin:0}
+  .vhead button{padding:6px 14px;font-size:.82rem}
+  .vform{max-width:420px}
 </style>
 </head>
 <body>
@@ -231,10 +243,73 @@ function pendHTML(state){
     var btn=i.rec?(i.pag?'<button class="btn-ghost" data-pact="deshacer">Deshacer</button>':'<button class="btn-ok" data-pact="pagar">Ya lo pagué</button>'):'<button class="btn-ok" data-pact="hecho">Ya lo compré</button>';
     return '<div class="pend'+(i.pag?' done':'')+'" data-pid="'+p.id+'"><div class="who"><p class="nombre">'+escapeHtml(p.nombre)+(i.rec&&i.due&&i.ed<hd?'<span class="pill">Atrasado</span>':'')+'</p><p class="meta">'+meta+'</p></div><div class="cifras">'+(p.monto?'<div class="por-quincena">'+money(p.monto)+'</div>':'')+'<div class="row-actions">'+btn+'<button class="btn-ghost" data-pact="borrar">Eliminar</button></div></div></div>';
   }).join('');
-  return '<details class="pendientes"'+(pendOpen?' open':'')+'><summary><h2>Pendientes del mes</h2>'+(al.length?'<span class="alerta" title="Por atender">! '+al.length+'</span>':'')+'</summary><p class="count">'+(al.length?al.length+' por atender'+(tot?' · '+money(tot):''):'Nada por atender ahora')+'</p>'+(rows||'<p class="empty">Agrega pagos del mes o cosas por comprar.</p>')+
+  return '<details class="pendientes" open><summary><h2>Este mes</h2>'+(al.length?'<span class="alerta" title="Por atender">! '+al.length+'</span>':'')+'</summary><p class="count">'+(al.length?al.length+' por atender'+(tot?' · '+money(tot):''):'Nada por atender ahora')+'</p>'+(rows||'<p class="empty">Agrega pagos del mes o cosas por comprar.</p>')+
   '<details class="add"><summary>Agregar pendiente</summary><div class="pform"><div class="field"><label for="p-n">Qué es</label><input id="p-n" type="text" placeholder="Ej. Parqueadero"></div><div class="field"><label for="p-m">Valor (opcional)</label><input id="p-m" type="number" min="0" step="1000"></div><div class="field"><label for="p-d">Día del mes (vacío si es una compra suelta)</label><input id="p-d" type="number" min="1" max="31" placeholder="Ej. 2"></div><button class="btn-primary" data-pact="agregar">Agregar</button></div></details></details>';
 }
+
+var vista='inicio';
+function hoyISO(){var t=new Date();return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0')}
+function haceTexto(f){var d=-diasRestantes(f);return d<=0?'hoy':d===1?'ayer':'hace '+d+' días'}
+function pendAtender(state){
+  var m=ym(),T=new Date(),hd=T.getDate(),dm=new Date(T.getFullYear(),T.getMonth()+1,0).getDate();
+  return state.pendientes.filter(function(p){
+    var rec=!!p.dia,ed=rec?Math.min(p.dia,dm):0,pag=rec&&p.pagadoMes===m,due=!rec||(!pag&&ed<=hd);
+    return due&&!pag;
+  }).length;
+}
+function sumar(arr){return arr.reduce(function(t,i){return t+(i.monto||0)},0)}
+function barraHTML(state){
+  var pa=pendAtender(state),nt=state.tienda.length,no=state.otros.length;
+  return '<nav class="bar">'+
+    '<button data-nav="pendientes"><span class="ic">📋</span>Pendientes del mes'+(pa?'<span class="bd al">'+pa+'</span>':'')+'</button>'+
+    '<button data-nav="tienda"><span class="ic">🏪</span>Tienda'+(nt?'<span class="bd">'+nt+'</span>':'')+'</button>'+
+    '<button data-nav="otros"><span class="ic">🛍️</span>Otros pendientes'+(no?'<span class="bd">'+no+'</span>':'')+'</button>'+
+  '</nav>';
+}
+function vhead(ic,titulo){return '<div class="vhead"><button class="btn-ghost" data-nav="volver">← Volver</button><h1>'+ic+' '+titulo+'</h1></div>'}
+function tiendaHTML(state){
+  var items=state.tienda.slice().sort(function(a,b){return a.fecha<b.fecha?-1:a.fecha>b.fecha?1:0});
+  var tot=sumar(items),sin=items.filter(function(i){return !i.monto}).length;
+  var rows=items.map(function(i){
+    return '<div class="pend" data-tid="'+i.id+'"><div class="who"><p class="nombre">'+escapeHtml(i.nombre)+'</p><p class="meta">Fiado el '+fechaLegible(i.fecha)+' · '+haceTexto(i.fecha)+'</p>'+
+      '<div class="row-actions" style="justify-content:flex-start"><button class="btn-ok" data-tact="pagado">Ya pagué</button></div></div>'+
+      '<div class="cifras">'+(i.monto?'<div class="por-quincena">'+money(i.monto)+'</div>':'<div class="meta">Sin valor</div>')+'</div></div>';
+  }).join('');
+  return '<div class="wrap">'+vhead('🏪','Tienda (fiado)')+
+    '<div class="hero"><p class="label">Debo en la tienda</p><p class="num">'+money(tot)+'</p><p class="sub">'+
+    (items.length?items.length+' cosa(s) fiada(s)'+(sin?' · '+sin+' sin valor':''):'No debes nada en la tienda.')+'</p></div>'+
+    '<div class="pendientes">'+(rows||'<p class="empty">Aquí aparecerá lo que fíes.</p>')+'</div>'+
+    '<div class="pendientes"><h2>Fiar algo nuevo</h2><div class="vform">'+
+    '<div class="field"><label for="t-n">Qué fiaste</label><input id="t-n" type="text" placeholder="Ej. Arroz y huevos"></div>'+
+    '<div class="field"><label for="t-m">Valor (opcional)</label><input id="t-m" type="number" min="0" step="500"></div>'+
+    '<div class="field"><label for="t-f">Fecha</label><input id="t-f" type="date" value="'+hoyISO()+'"></div>'+
+    '<button class="btn-primary" id="t-add">Agregar</button></div></div></div>';
+}
+function otrosHTML(state){
+  var items=state.otros,tot=sumar(items),sin=items.filter(function(i){return !i.monto}).length;
+  var rows=items.map(function(i){
+    var partes=[];if(i.para)partes.push('Para: '+escapeHtml(i.para));if(!i.monto)partes.push('Sin precio');
+    return '<div class="pend" data-oid="'+i.id+'"><div class="who"><p class="nombre">'+escapeHtml(i.nombre)+'</p><p class="meta">'+partes.join(' · ')+'</p>'+
+      '<div class="row-actions" style="justify-content:flex-start"><input type="number" min="0" step="1000" placeholder="Precio" data-precio-input><button class="btn-ghost" data-oact="precio">Guardar precio</button><button class="btn-ok" data-oact="comprado">Ya lo compré</button></div></div>'+
+      '<div class="cifras">'+(i.monto?'<div class="por-quincena">'+money(i.monto)+'</div>':'')+'</div></div>';
+  }).join('');
+  return '<div class="wrap">'+vhead('🛍️','Otros pendientes')+
+    '<div class="hero"><p class="label">Total de lo que tiene precio</p><p class="num">'+money(tot)+'</p><p class="sub">'+
+    (items.length?items.length+' pendiente(s)'+(sin?' · '+sin+' sin precio':''):'No hay nada pendiente.')+'</p></div>'+
+    '<div class="pendientes">'+(rows||'<p class="empty">Ropa, cosas del niño, lo que haga falta.</p>')+'</div>'+
+    '<div class="pendientes"><h2>Agregar pendiente</h2><div class="vform">'+
+    '<div class="field"><label for="o-n">Qué hace falta</label><input id="o-n" type="text" placeholder="Ej. Zapatos"></div>'+
+    '<div class="field"><label for="o-q">Para quién (opcional)</label><input id="o-q" type="text" placeholder="Ej. El niño"></div>'+
+    '<div class="field"><label for="o-m">Precio (opcional)</label><input id="o-m" type="number" min="0" step="1000"></div>'+
+    '<button class="btn-primary" id="o-add">Agregar</button></div></div></div>';
+}
 function contentHTML(state){
+  if(vista==='pendientes')return '<div class="wrap">'+vhead('📋','Pendientes del mes')+pendHTML(state)+'</div>';
+  if(vista==='tienda')return tiendaHTML(state);
+  if(vista==='otros')return otrosHTML(state);
+  return homeHTML(state);
+}
+function homeHTML(state){
   var calc=calcular(state),excede=state.ingresoQuincenal>0&&calc.totalAhorro>state.ingresoQuincenal;
   var pend=calc.items.filter(function(i){return i.pendiente>0}).length;
   var rows=calc.items.slice().sort(function(a,b){return a.dias-b.dias}).map(function(it){
@@ -243,7 +318,7 @@ function contentHTML(state){
     '<div class="row-actions">'+(it.pendiente>0?'<input type="number" min="0" step="1000" placeholder="Abonar $" data-abono-input><button class="btn-ghost" data-action="abonar">Abonar</button><button class="btn-ghost" data-action="eliminar">Eliminar</button>':'<button class="btn-ghost" data-action="eliminar">Quitar de la lista</button>')+'</div></div>'+
     '<div class="cifras"><div class="por-quincena">'+(it.pendiente>0?money(it.porQuincena)+' / quincena':'✓')+'</div>'+(it.pendiente>0?'<div class="pendiente">pendiente '+money(it.pendiente)+'</div>':'')+'</div></div>';
   }).join('');
-  return '<div class="wrap"><header class="top"><h1>Mi cuenta quincenal</h1><button class="btn-ghost" id="btn-salir">Salir</button></header>'+pendHTML(state)+'<div class="hero"><p class="label">Necesitas apartar esta quincena</p><p class="num">'+money(calc.totalAhorro)+'</p><p class="sub'+(excede?' warn':'')+'">'+
+  return '<div class="wrap"><header class="top"><h1>Mi cuenta quincenal</h1><button class="btn-ghost" id="btn-salir">Salir</button></header>'+barraHTML(state)+'<div class="hero"><p class="label">Necesitas apartar esta quincena</p><p class="num">'+money(calc.totalAhorro)+'</p><p class="sub'+(excede?' warn':'')+'">'+
   (pend?pend+' gasto(s) programado(s) repartidos entre lo que falta para cada fecha.'+(excede?' Supera tu ingreso quincenal de '+money(state.ingresoQuincenal)+'.':''):'No tienes gastos pendientes programados.')+'</p></div>'+
   '<div class="grid"><div class="panel-left"><h2>Tus números</h2>'+
   '<div class="field"><label for="in-saldo">Saldo actual</label><input id="in-saldo" type="number" min="0" step="1000" value="'+(state.saldo||0)+'"></div>'+
@@ -255,13 +330,14 @@ function contentHTML(state){
 }
 
 
-var state = { saldo: 0, ingresoQuincenal: 0, gastos: [], pendientes: [] };
+var state = { saldo: 0, ingresoQuincenal: 0, gastos: [], pendientes: [], tienda: [], otros: [] };
 var user = null, unsub = null, mensaje = '';
 
 function normalizar(d) {
   d = d || {};
   return { saldo: Number(d.saldo) || 0, ingresoQuincenal: Number(d.ingresoQuincenal) || 0,
-           gastos: Array.isArray(d.gastos) ? d.gastos : [], pendientes: Array.isArray(d.pendientes) ? d.pendientes : [] };
+           gastos: Array.isArray(d.gastos) ? d.gastos : [], pendientes: Array.isArray(d.pendientes) ? d.pendientes : [],
+           tienda: Array.isArray(d.tienda) ? d.tienda : [], otros: Array.isArray(d.otros) ? d.otros : [] };
 }
 function errorTexto(e) {
   var c = (e && e.code) || '';
@@ -295,11 +371,11 @@ if (!configOk) {
   onAuthStateChanged(auth, function (u) {
     user = u;
     if (unsub) { unsub(); unsub = null; }
-    if (!u) { renderLogin(); return; }
+    if (!u) { vista = 'inicio'; renderLogin(); return; }
     unsub = onSnapshot(doc(db, 'usuarios', u.uid), function (snap) {
       state = normalizar(snap.exists() ? snap.data() : null);
       var activo = document.activeElement && document.activeElement.id;
-      if (activo === 'in-nombre' || activo === 'in-monto' || activo === 'in-fecha' || activo === 'p-n' || activo === 'p-m' || activo === 'p-d') return;
+      if (['in-nombre','in-monto','in-fecha','p-n','p-m','p-d','t-n','t-m','t-f','o-n','o-q','o-m'].indexOf(activo) !== -1) return;
       renderLocal();
     }, function () { appEl.innerHTML = '<div class="login"><h1>No se pudo leer</h1><p class="sub">Revisa las reglas de Firestore y tu internet.</p></div>'; });
   });
@@ -319,6 +395,32 @@ appEl.addEventListener('click', function (e) {
     return;
   }
   if (t.id === 'btn-salir') { signOut(auth); return; }
+  var nv = t.closest && t.closest('[data-nav]');
+  if (nv) { var dest = nv.getAttribute('data-nav'); if (dest === 'volver') { history.back(); } else { irA(dest); } return; }
+  if (t.id === 't-add') {
+    var tn = document.getElementById('t-n').value.trim(), tm = Number(document.getElementById('t-m').value) || 0, tf = document.getElementById('t-f').value || hoyISO();
+    if (!tn) return;
+    state.tienda.push({ id: uid(), nombre: tn, monto: tm, fecha: tf }); commit(); return;
+  }
+  var ta = t.getAttribute('data-tact');
+  if (ta) {
+    var te = t.closest('.pend'), tid = te && te.getAttribute('data-tid'), it = state.tienda.find(function (x) { return x.id === tid; });
+    if (it && confirm('¿Ya pagaste "' + it.nombre + '"? Se quitará de la lista.')) { state.tienda = state.tienda.filter(function (x) { return x.id !== tid; }); commit(); }
+    return;
+  }
+  if (t.id === 'o-add') {
+    var on = document.getElementById('o-n').value.trim(), oq = document.getElementById('o-q').value.trim(), om = Number(document.getElementById('o-m').value) || 0;
+    if (!on) return;
+    state.otros.push({ id: uid(), nombre: on, para: oq, monto: om }); commit(); return;
+  }
+  var oa = t.getAttribute('data-oact');
+  if (oa) {
+    var oe = t.closest('.pend'), oid = oe && oe.getAttribute('data-oid'), ot = state.otros.find(function (x) { return x.id === oid; });
+    if (!ot) return;
+    if (oa === 'comprado') { state.otros = state.otros.filter(function (x) { return x.id !== oid; }); }
+    else if (oa === 'precio') { var pin = oe.querySelector('[data-precio-input]'), pv = Number(pin && pin.value) || 0; if (pv <= 0) return; ot.monto = pv; }
+    commit(); return;
+  }
   var pa = t.getAttribute('data-pact');
   if (pa) {
     if (pa === 'agregar') {
@@ -364,6 +466,13 @@ appEl.addEventListener('change', function (e) {
   }
 });
 appEl.addEventListener('toggle', function (e) { if (e.target.classList && e.target.classList.contains('pendientes')) pendOpen = e.target.open; }, true);
+
+function irA(v) { vista = v; history.pushState({ v: v }, ''); renderLocal(); window.scrollTo(0, 0); }
+history.replaceState({ v: 'inicio' }, '');
+window.addEventListener('popstate', function (e) {
+  vista = (e.state && e.state.v) || 'inicio';
+  if (user) { renderLocal(); window.scrollTo(0, 0); }
+});
 
 if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
 
