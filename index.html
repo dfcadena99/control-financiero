@@ -192,6 +192,15 @@ const firebaseConfig = {
   appId: "1:978613163103:web:9b524616b4356db6d8b7ea"
 };
 
+var appEl = document.getElementById('app');
+var configOk = firebaseConfig.apiKey.indexOf('PEGA') === -1;
+var auth, db;
+if (configOk) {
+  var fbApp = initializeApp(firebaseConfig);
+  auth = getAuth(fbApp);
+  db = getFirestore(fbApp);
+}
+
 var fmt=new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0});
 function money(n){return fmt.format(Math.round(n||0))}
 function hoy(){var t=new Date();t.setHours(0,0,0,0);return t}
@@ -280,7 +289,7 @@ function commit() {
 }
 
 if (!configOk) {
-  appEl.innerHTML = '<div class="login"><h1>Falta un paso</h1><p class="sub">Revisa el archivo firebase-config.js.</p></div>';
+  appEl.innerHTML = '<div class="login"><h1>Falta un paso</h1><p class="sub">Revisa la configuración de Firebase.</p></div>';
 } else {
   appEl.innerHTML = '<p class="cargando">Cargando…</p>';
   onAuthStateChanged(auth, function (u) {
