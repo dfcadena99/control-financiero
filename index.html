@@ -175,16 +175,17 @@
   .cargando{text-align:center;padding:80px 20px;color:var(--ink-soft)}
 
   .row-actions{flex-wrap:wrap}
-  .bar{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:26px}
-  .bar button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 6px;background:var(--surface);border:1px solid var(--line);border-radius:16px;color:var(--ink);position:relative;font-size:.78rem;font-weight:600;line-height:1.2;text-align:center}
-  .bar button:hover{border-color:var(--accent)}
-  .bar .ic{font-size:1.7rem;line-height:1}
-  .bar .bd{position:absolute;top:6px;right:8px;min-width:20px;height:20px;border-radius:10px;background:var(--accent);color:#fff;font-size:.72rem;display:grid;place-items:center;padding:0 5px}
-  .bar .bd.al{background:var(--alert)}
+  .menu3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:26px}
+  .menu3 button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 6px;background:var(--surface);border:1px solid var(--line);border-radius:16px;color:var(--ink);position:relative;font-size:.78rem;font-weight:600;line-height:1.2;text-align:center}
+  .menu3 button:hover{border-color:var(--accent)}
+  .menu3 .ic{font-size:1.7rem;line-height:1}
+  .menu3 .bd{position:absolute;top:6px;right:8px;min-width:20px;height:20px;border-radius:10px;background:var(--accent);color:#fff;font-size:.72rem;display:grid;place-items:center;padding:0 5px}
+  .menu3 .bd.al{background:var(--alert)}
   .vhead{display:flex;align-items:center;gap:14px;margin-bottom:22px;flex-wrap:wrap}
   .vhead h1{font-size:1.3rem;margin:0}
   .vhead button{padding:6px 14px;font-size:.82rem}
   .vform{max-width:420px}
+  .pendientes>h2{margin-bottom:14px}
 </style>
 </head>
 <body>
@@ -260,7 +261,7 @@ function pendAtender(state){
 function sumar(arr){return arr.reduce(function(t,i){return t+(i.monto||0)},0)}
 function barraHTML(state){
   var pa=pendAtender(state),nt=state.tienda.length,no=state.otros.length;
-  return '<nav class="bar">'+
+  return '<nav class="menu3">'+
     '<button data-nav="pendientes"><span class="ic">📋</span>Pendientes del mes'+(pa?'<span class="bd al">'+pa+'</span>':'')+'</button>'+
     '<button data-nav="tienda"><span class="ic">🏪</span>Tienda'+(nt?'<span class="bd">'+nt+'</span>':'')+'</button>'+
     '<button data-nav="otros"><span class="ic">🛍️</span>Otros pendientes'+(no?'<span class="bd">'+no+'</span>':'')+'</button>'+
